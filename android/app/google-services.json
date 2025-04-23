@@ -1,0 +1,118 @@
+{
+  "project_info": {
+    "project_number": "967510021533",
+    "project_id": "tractor-ecom-app",
+    "storage_bucket": "tractor-ecom-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:967510021533:android:3a9e1d9b9f389bc55ecb74",
+        "android_client_info": {
+          "package_name": "com.example.grocery_admin_panel"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "967510021533-ch5p3o2hamt0nkqmvdoib7kkm5sb0gge.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBh_ygGojbBC4LzBj7mgmNc26XPQQGj7cQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "967510021533-ch5p3o2hamt0nkqmvdoib7kkm5sb0gge.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "967510021533-c9ejc2dcv40vb0rarsnudk1g8isrqdei.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.groceryAdminPanel"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:967510021533:android:e185e2c79c8780d85ecb74",
+        "android_client_info": {
+          "package_name": "com.example.grocery_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "967510021533-ch5p3o2hamt0nkqmvdoib7kkm5sb0gge.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBh_ygGojbBC4LzBj7mgmNc26XPQQGj7cQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "967510021533-ch5p3o2hamt0nkqmvdoib7kkm5sb0gge.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "967510021533-c9ejc2dcv40vb0rarsnudk1g8isrqdei.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.groceryAdminPanel"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:967510021533:android:cfc7654ca8c506485ecb74",
+        "android_client_info": {
+          "package_name": "com.jaydev.ecom.project_ecommerce"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "967510021533-ch5p3o2hamt0nkqmvdoib7kkm5sb0gge.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBh_ygGojbBC4LzBj7mgmNc26XPQQGj7cQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "967510021533-ch5p3o2hamt0nkqmvdoib7kkm5sb0gge.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "967510021533-c9ejc2dcv40vb0rarsnudk1g8isrqdei.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.groceryAdminPanel"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
