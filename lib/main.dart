@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:project_ecommerce/features/authentication/authentication_feature.dart';
 import 'package:project_ecommerce/provider/address_provider.dart';
 import 'package:project_ecommerce/provider/authentication_provider.dart';
+import 'package:project_ecommerce/provider/cart_provider.dart';
 import 'package:project_ecommerce/provider/product_provider.dart';
 import 'package:project_ecommerce/provider/user_profile_provider.dart';
 import 'package:project_ecommerce/services/firebase_services.dart';
@@ -56,6 +57,12 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) => AddressProvider(
+            context.read<BaseFirebaseService>(),
+          ),
+        ),
+
+        ChangeNotifierProvider(
+          create: (context) => CartProvider(
             context.read<BaseFirebaseService>(),
           ),
         ),

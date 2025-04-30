@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:project_ecommerce/provider/product_provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // Add this package for animations
-import '../../models/product_dm.dart';
+import 'package:project_ecommerce/models/cart_item_dm.dart';
+import 'package:project_ecommerce/models/product_dm.dart';
+import 'package:project_ecommerce/provider/cart_provider.dart';
+import 'package:project_ecommerce/provider/product_provider.dart';
 
-/// Refactored ProductListingScreen as a StatelessWidget
-/// Uses a separate controller class for business logic
+import '../product/product_details_screen.dart';
+
+/// ProductListingScreen - The main screen to display products in a grid layout
+/// Uses Provider pattern for state management and data fetching
 class ProductListingScreen extends StatefulWidget {
   const ProductListingScreen({super.key});
 
@@ -17,49 +21,55 @@ class ProductListingScreen extends StatefulWidget {
 class _ProductListingScreenState extends State<ProductListingScreen> {
   @override
   void initState() {
-    // Initialize data fetching when first built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductProvider>(context, listen: false).fetchProducts();
-    });
     super.initState();
+    // Initialize data fetching after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
+
+  /// Initialize product and cart data
+  void _initializeData() {
+    // Fetch products and load cart items without rebuilding UI yet
+    Provider.of<ProductProvider>(context, listen: false).fetchProducts();
+    Provider.of<CartProvider>(context, listen: false).loadCart();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Initialize the product controller during first build
-
-    return _ProductListingView();
+    return const _ProductListingView();
   }
 }
 
 /// Main view component for product listing
+/// Handles different UI states: loading, error, empty, and products display
 class _ProductListingView extends StatelessWidget {
+  const _ProductListingView();
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ProductProvider>(
       builder: (context, productProvider, _) {
-        // Loading state
+        // Handle different UI states based on the product provider's state
         if (productProvider.isLoadingProducts) {
           return _buildLoadingView();
         }
 
-        // Error state
         if (productProvider.error != null) {
           return _buildErrorView(context, productProvider);
         }
 
-        // Empty state
         if (productProvider.products.isEmpty) {
           return _buildEmptyView();
         }
 
-        // Products display
+        // Default view with products
         return _buildProductsView(context, productProvider);
       },
     );
   }
 
-  /// Loading animation view
+  /// Loading animation view with fading and scaling effects
   Widget _buildLoadingView() {
     return Center(
       child: Column(
@@ -79,7 +89,7 @@ class _ProductListingView extends StatelessWidget {
     );
   }
 
-  /// Error view with retry button
+  /// Error view with animated error icon and retry button
   Widget _buildErrorView(
       BuildContext context, ProductProvider productProvider) {
     return Center(
@@ -115,7 +125,7 @@ class _ProductListingView extends StatelessWidget {
     );
   }
 
-  /// Empty state view
+  /// Empty state view with fade and scale animations
   Widget _buildEmptyView() {
     return Center(
       child: Column(
@@ -145,29 +155,9 @@ class _ProductListingView extends StatelessWidget {
       BuildContext context, ProductProvider productProvider) {
     return Column(
       children: [
-        // Header with animation
-        // Container(
-        //   padding: const EdgeInsets.all(16),
-        //   child: Column(
-        //     children: [
-        //       Text(
-        //         'Product Collection',
-        //         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-        //               fontWeight: FontWeight.bold,
-        //             ),
-        //       ).animate().fadeIn(duration: const Duration(milliseconds: 600)),
-        //       const SizedBox(height: 8),
-        //       Text(
-        //         '${productProvider.products.length} items',
-        //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        //               color: Colors.grey,
-        //             ),
-        //       ).animate().fadeIn(delay: const Duration(milliseconds: 200)),
-        //     ],
-        //   ),
-        // ),
+        // Removed header content as it was commented out in original code
 
-        // Main product grid
+        // Main product grid with pull-to-refresh
         Expanded(
           child: RefreshIndicator(
             onRefresh: () => productProvider.fetchProducts(),
@@ -180,10 +170,13 @@ class _ProductListingView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final Product product = productProvider.products[index];
 
+                // Calculate dynamic height for staggered effect
+                final double height = _getHeightForIndex(index);
+
                 // Apply staggered animation to each product card
                 return ProductCard(
                   product: product,
-                  height: _getHeightForIndex(index),
+                  height: height,
                   index: index,
                 )
                     .animate()
@@ -200,15 +193,16 @@ class _ProductListingView extends StatelessWidget {
     );
   }
 
-  /// Calculate dynamic height for product cards
+  /// Calculate dynamic height for product cards to create visual interest
   double _getHeightForIndex(int index) {
-    // Create a pattern of different heights for visual interest
-    List<double> pattern = [280, 380, 380, 280];
+    // Create a pattern of different heights
+    const List<double> pattern = [280, 380, 380, 280];
     return pattern[index % pattern.length];
   }
 }
 
 /// Product card widget for displaying individual products
+/// Includes image, details, price, and action buttons
 class ProductCard extends StatelessWidget {
   final Product product;
   final double height;
@@ -226,7 +220,7 @@ class ProductCard extends StatelessWidget {
     return Hero(
       tag: 'product-${product.id}',
       child: Material(
-        // Adds Material widget to enable proper Hero animation
+        // Material needed for proper Hero animation
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _navigateToProductDetails(context, product),
@@ -248,146 +242,11 @@ class ProductCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product image
-                  Expanded(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Product image
-                        Container(
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: NetworkImage(product.imageUrls.first),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
+                  // Image section with overlay and buttons
+                  _buildProductImageSection(context),
 
-                        // Gradient overlay for better text visibility
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            height: 60,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.4),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Favorite and cart buttons
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Row(
-                            children: [
-                              _buildIconButton(
-                                context,
-                                Icons.favorite_border,
-                                () => _toggleFavorite(context, product),
-                              ),
-                              const SizedBox(width: 8),
-                              _buildIconButton(
-                                context,
-                                Icons.shopping_cart_outlined,
-                                () => _addToCart(context, product),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Discount label if applicable
-                        if (product.discountType != DiscountType.none)
-                          Positioned(
-                            top: 8,
-                            left: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _getDiscountText(product),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  // Product details
-                  Container(
-                    color: Colors.white,
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.name,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          product.description,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey[700],
-                                  ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Text(
-                              '₹${product.finalPrice.toStringAsFixed(2)}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                            ),
-                            if (product.discountType != DiscountType.none)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: Text(
-                                  '₹${product.price.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    decoration: TextDecoration.lineThrough,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Details section with product info and price
+                  _buildProductDetailsSection(context),
                 ],
               ),
             ),
@@ -397,7 +256,201 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  /// Helper to build icon buttons with animation
+  /// Product image section with gradient overlay and action buttons
+  Widget _buildProductImageSection(BuildContext context) {
+    return Expanded(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Product image background
+          _buildProductImage(),
+
+          // Gradient overlay for text visibility
+          _buildGradientOverlay(),
+
+          // Favorite and cart buttons in top right
+          _buildActionButtons(context),
+
+          // Discount label if applicable
+          if (product.discountType != DiscountType.none)
+            _buildDiscountLabel(context),
+        ],
+      ),
+    );
+  }
+
+  /// Product image with cover fit
+  Widget _buildProductImage() {
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: NetworkImage(product.imageUrls.first),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  /// Gradient overlay for better text visibility
+  Widget _buildGradientOverlay() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.black.withValues(alpha: 0.4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Favorite and cart buttons
+  Widget _buildActionButtons(BuildContext context) {
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: Row(
+        children: [
+          // Favorite button
+          _buildIconButton(
+            context,
+            Icons.favorite_border,
+            () => _toggleFavorite(context, product),
+          ),
+          const SizedBox(width: 8),
+
+          // Cart button with dynamic icon based on cart state
+          Consumer<CartProvider>(
+            builder: (context, provider, _) {
+              final CartItem? cartItem =
+                  provider.getCartItemForProduct(product.id ?? '');
+              return _buildIconButton(
+                context,
+                cartItem != null
+                    ? Icons.shopping_cart
+                    : Icons.shopping_cart_outlined,
+                () => _handleCartAction(context, cartItem, provider),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle cart button action - remove if in cart, add if not
+  void _handleCartAction(
+      BuildContext context, CartItem? cartItem, CartProvider provider) {
+    if (cartItem != null) {
+      provider.removeFromCart(cartItem.id);
+    } else {
+      _addToCart(context, product, provider);
+    }
+  }
+
+  /// Discount label for products on sale
+  Widget _buildDiscountLabel(BuildContext context) {
+    return Positioned(
+      top: 8,
+      left: 8,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 4,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          _getDiscountText(product),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Product details section with name, description and price
+  Widget _buildProductDetailsSection(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product name
+          Text(
+            product.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+
+          // Product description
+          Text(
+            product.description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[700],
+                ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+
+          // Price information
+          _buildPriceSection(context),
+        ],
+      ),
+    );
+  }
+
+  /// Price section showing current price and strikethrough original price if discounted
+  Widget _buildPriceSection(BuildContext context) {
+    return Row(
+      children: [
+        // Final price
+        Text(
+          '₹${product.finalPrice.toStringAsFixed(2)}',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
+        ),
+
+        // Original price if discounted
+        if (product.discountType != DiscountType.none)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              '₹${product.price.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 14,
+                decoration: TextDecoration.lineThrough,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Helper to build animated icon buttons
   Widget _buildIconButton(
       BuildContext context, IconData icon, VoidCallback onPressed) {
     return Material(
@@ -420,32 +473,22 @@ class ProductCard extends StatelessWidget {
 
   /// Get discount text based on discount type
   String _getDiscountText(Product product) {
-    if (product.discountType == DiscountType.percentage) {
-      return '${product.discountValue.toInt()}% OFF';
-    } else if (product.discountType == DiscountType.fixedAmount) {
-      return '₹${product.discountValue} OFF';
+    switch (product.discountType) {
+      case DiscountType.percentage:
+        return '${product.discountValue.toInt()}% OFF';
+      case DiscountType.fixedAmount:
+        return '₹${product.discountValue} OFF';
+      default:
+        return 'SALE';
     }
-    return 'SALE';
   }
 
   /// Navigate to product details screen
   void _navigateToProductDetails(BuildContext context, Product product) {
-    // Navigate to product details screen (implement in your app)
-    // Example:
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => ProductDetailsScreen(product: product),
-    //   ),
-    // );
-
-    // For now, just show a snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Viewing ${product.name}'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => ProductDetailsScreen(product: product)));
   }
 
   /// Toggle favorite status
@@ -460,13 +503,15 @@ class ProductCard extends StatelessWidget {
   }
 
   /// Add product to cart
-  void _addToCart(BuildContext context, Product product) {
-    // Implement adding to cart
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added ${product.name} to cart'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+  void _addToCart(
+      BuildContext context, Product product, CartProvider cartProvider) async {
+    await cartProvider.addToCart(product, 1).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Added ${product.name} to cart'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    });
   }
 }

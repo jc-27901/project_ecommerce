@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/address_dm.dart';
+import '../models/cart_item_dm.dart';
 import '../models/product_dm.dart';
 import '../models/user_dm.dart';
 
@@ -71,6 +72,21 @@ abstract class BaseFirebaseService {
 
   /// Delete a user address
   Future<void> deleteUserAddress(String userId, String addressId);
+
+  /// Get all cart items for a user
+  Future<List<CartItem>> getUserCartItems(String userId);
+
+  /// Add an item to the user's cart
+  Future<String> addToCart(String userId, CartItem cartItem);
+
+  /// Update quantity of a cart item
+  Future<void> updateCartItemQuantity(String userId, String cartItemId, int newQuantity);
+
+  /// Remove an item from the user's cart
+  Future<void> removeFromCart(String userId, String cartItemId);
+
+  /// Clear all items from the user's cart
+  Future<void> clearCart(String userId);
 
 }
 
@@ -443,5 +459,115 @@ class FirebaseService implements BaseFirebaseService {
       throw Exception('Failed to delete user address: $e');
     }
   }
+
+  /// Get all cart items for a user
+  @override
+  Future<List<CartItem>> getUserCartItems(String userId) async {
+    try {
+      QuerySnapshot querySnapshot = await _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection('cart')
+          .orderBy('addedAt', descending: true)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        return CartItem.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to get cart items: $e');
+    }
+  }
+
+  /// Add an item to the user's cart
+  @override
+  Future<String> addToCart(String userId, CartItem cartItem) async {
+    try {
+      // Check if product already exists in cart
+      QuerySnapshot existingItems = await _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection('cart')
+          .where('productId', isEqualTo: cartItem.productId)
+          .limit(1)
+          .get();
+
+      if (existingItems.docs.isNotEmpty) {
+        // Product already in cart, update quantity
+        String existingItemId = existingItems.docs.first.id;
+        CartItem existingItem = CartItem.fromMap(
+            existingItems.docs.first.data() as Map<String, dynamic>,
+            existingItemId);
+
+        await updateCartItemQuantity(
+            userId, existingItemId, existingItem.quantity + cartItem.quantity);
+        return existingItemId;
+      } else {
+        // Add new item to cart
+        DocumentReference docRef = await _firestore
+            .collection(_usersCollection)
+            .doc(userId)
+            .collection('cart')
+            .add(cartItem.toMap());
+
+        return docRef.id;
+      }
+    } catch (e) {
+      throw Exception('Failed to add item to cart: $e');
+    }
+  }
+
+  /// Update quantity of a cart item
+  @override
+  Future<void> updateCartItemQuantity(
+      String userId, String cartItemId, int newQuantity) async {
+    try {
+      await _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection('cart')
+          .doc(cartItemId)
+          .update({'quantity': newQuantity});
+    } catch (e) {
+      throw Exception('Failed to update cart item quantity: $e');
+    }
+  }
+
+  /// Remove an item from the user's cart
+  @override
+  Future<void> removeFromCart(String userId, String cartItemId) async {
+    try {
+      await _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection('cart')
+          .doc(cartItemId)
+          .delete();
+    } catch (e) {
+      throw Exception('Failed to remove item from cart: $e');
+    }
+  }
+
+  /// Clear all items from the user's cart
+  @override
+  Future<void> clearCart(String userId) async {
+    try {
+      QuerySnapshot cartItems = await _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection('cart')
+          .get();
+
+      WriteBatch batch = _firestore.batch();
+      for (var doc in cartItems.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to clear cart: $e');
+    }
+  }
+
 
 }
